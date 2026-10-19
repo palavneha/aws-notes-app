@@ -1,0 +1,74 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notes on DynamoDB</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --text:#1c2430; --muted:#667085; --accent:#e8710a; --line:#e4e7ec; --err:#b42318; --ok:#067647; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#12161c; --card:#1b212a; --text:#e8ecf2; --muted:#98a2b3; --line:#2a323d; --err:#f97066; --ok:#47cd89; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 20px; font-size: .9rem; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    input, textarea { width:100%; padding:9px 10px; margin-bottom:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); font:inherit; }
+    button { padding:8px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+    button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); }
+    button.danger { background:transparent; color:var(--err); border:1px solid var(--line); }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .flash { padding:10px 12px; border-radius:6px; margin-bottom:12px; border:1px solid var(--line); }
+    .flash.error { color: var(--err); }
+    .flash.ok { color: var(--ok); }
+    .note h3 { margin:0 0 4px; font-size:1.05rem; }
+    .note p { margin:0 0 8px; white-space:pre-wrap; }
+    .meta { color:var(--muted); font-size:.8rem; margin-bottom:8px; }
+    details summary { cursor:pointer; color:var(--muted); font-size:.9rem; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+<main>
+  <p>Logged in as {{ user.email }}</p>
+<a href="{{ url_for('logout') }}">Log out</a>
+  <h1>Notes</h1>
+  <p class="sub">Stored in DynamoDB table <code>{{ table }}</code></p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form class="card" method="post" action="{{ url_for('add') }}">
+    <input name="title" placeholder="Title" required maxlength="120">
+    <textarea name="body" rows="3" placeholder="Write something..."></textarea>
+    <button type="submit">Add note</button>
+  </form>
+
+  {% for n in notes %}
+    <div class="card note">
+      <h3>{{ n.title }}</h3>
+      <div class="meta">{{ n.created_at[:16].replace('T', ' ') }} UTC</div>
+      <p>{{ n.body }}</p>
+      <details>
+        <summary>Edit</summary>
+        <form method="post" action="{{ url_for('edit', note_id=n.id) }}">
+          <input name="title" value="{{ n.title }}" required maxlength="120">
+          <textarea name="body" rows="3">{{ n.body }}</textarea>
+          <button type="submit" class="ghost">Save changes</button>
+        </form>
+      </details>
+      <form method="post" action="{{ url_for('delete', note_id=n.id) }}" onsubmit="return confirm('Delete this note?');">
+        <button type="submit" class="danger">Delete</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="sub">No notes yet. Add your first one above.</p>
+  {% endfor %}
+</main>
+</body>
+</html>
