@@ -33,7 +33,7 @@ app.secret_key = os.environ["FLASK_SECRET_KEY"]
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False,  # Local HTTP development only
+    SESSION_COOKIE_SECURE=not app.debug,
 )
 
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
@@ -100,10 +100,10 @@ def index():
         user=current_user(),
     )
 
-
 @app.route("/login")
 def login():
-    return oauth.cognito.authorize_redirect(REDIRECT_URI)
+    redirect_uri = url_for("callback", _external=True)
+    return oauth.cognito.authorize_redirect(redirect_uri)
 
 
 @app.route("/callback")
@@ -134,13 +134,11 @@ from flask import redirect, session
 def logout():
     session.clear()
 
-    params = {
-        "client_id": COGNITO_CLIENT_ID,
-        "logout_uri": "http://127.0.0.1:5000/",
-    }
-
-    logout_url = f"{COGNITO_DOMAIN}/logout?{urlencode(params)}"
-    return redirect(logout_url)
+    return redirect(
+        f"{COGNITO_DOMAIN}/logout"
+        f"?client_id={COGNITO_CLIENT_ID}"
+        f"&logout_uri={url_for('index', _external=True)}"
+    )
 
 @app.route("/add", methods=["POST"])
 def add():
