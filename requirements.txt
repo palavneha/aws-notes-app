@@ -1,2 +1,5 @@
-Flask>=3.0
-boto3>=1.34
+Flask
+boto3
+python-dotenv
+Authlib
+Flask-Session
